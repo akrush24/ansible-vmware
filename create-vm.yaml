@@ -4,6 +4,8 @@
 # example for run whitch extra-vars: 
 # ansible-playbook ./create-vm.yaml --extra-vars '{"name":"uma-db-01","ip":"192.168.24.63","cpu":"4","mem":"8000","vc":"vcsa.srv.local","vcenter_pass":"PWD","dc":"ATK","vmtemplate":"template_centos7.5_atk","datastore":"vm04_localstore","folder":"CRM","esxi":"ars-vm04.srv.local","net":"VLAN_24","disk","70"}'
 
+# DOCs: https://docs.ansible.com/ansible/latest/modules/vmware_guest_module.html#notes
+
 - name: VM from template
   hosts: localhost
   gather_facts: false
