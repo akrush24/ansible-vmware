@@ -1,0 +1,78 @@
+---
+# Playbook for create a new VM from a template
+
+# example for run whitch extra-vars: 
+# ansible-playbook ./create-vm.yaml --extra-vars '{"name":"uma-db-01","ip":"192.168.24.63","cpu":"4","mem":"8000","vc":"vcsa.srv.local","vcenter_pass":"PWD","dc":"ATK","vmtemplate":"template_centos7.5_atk","datastore":"vm04_localstore","folder":"CRM","esxi":"ars-vm04.srv.local","net":"VLAN_24","disk","70"}'
+
+- name: VM from template
+  hosts: localhost
+  gather_facts: false
+  connection: local
+  
+  vars:
+    # переменные по умолчанию, их можно переопределить через командную строку с ключом --extra-vars
+    vc: vc-linx.srv.local
+    vcenter_user: administrator@vsphere.local
+    vcenter_pass:
+    esxi: 172.20.20.13
+    # cluster: linx-cluster01
+    datastore: 13_localstore_r10
+    vmtemplate: shr-clear-template
+    #name: "ansible-test-vm"
+    notes: "Ansible Auto Deploy"
+    dumpfacts: False
+    gw: 192.168.189.1
+    netmask: 255.255.255.0
+    net: 192.168.189_uni
+    #cluster:
+    dc: Datacenter-Linx
+    folder:
+    disk_size:
+  tasks:
+    # get date
+    - set_fact: creationdate="{{lookup('pipe','date "+%Y/%m/%d %H:%M"')}}"
+
+    - name: Create VM from template
+      vmware_guest:
+        validate_certs: False
+        hostname: "{{ vc }}"
+        username: "{{ vcenter_user }}"
+        password: "{{ vcenter_pass }}"
+        esxi_hostname: "{{ esxi }}"
+        #when: esxi != ""
+        #cluster: "{{ cluster }}"
+        #when: cluster != ""
+        datacenter: "{{ dc }}"
+        folder: "{{ folder }}"
+        state: poweredon
+        name: "{{ name }}"
+        template: "{{ vmtemplate }}"
+        annotation: "{{ notes }} - {{ creationdate }}"
+        disk:
+          - size_gb: "{{ disk | default(30) }}"
+            type: thin
+            datastore: "{{ datastore }}"
+        networks:
+         - name: "{{ net }}"
+           ip: "{{ ip }}"
+           netmask: "{{ netmask }}"
+           gateway: "{{ gw }}"
+        annotation: "{{ creationdate }}, {{ notes }}, {{ ip }}"
+        customization:
+          domain: "srv.local"
+          dns_servers:
+           - 172.20.20.20
+           - 192.168.245.20
+          dns_suffix:
+           - srv.local
+        hardware:
+          memory_mb: "{{ mem | default(1024) }}"
+          num_cpus: "{{ cpu | default(1) }}"
+          scsi: paravirtual
+        wait_for_ip_address: True
+        state: present
+      register: newvm
+
+    - name: IP address info
+      debug:
+        msg: "{{ newvm.instance.ipv4 }} {{ name }}"
